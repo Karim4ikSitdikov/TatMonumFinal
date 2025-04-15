@@ -1,27 +1,32 @@
 document.addEventListener('DOMContentLoaded', function() {
     ymaps.ready(initMap);
+    
+    // Обработка формы добавления памятника
+    const form = document.getElementById('monument-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Спасибо! Ваша заявка принята. После проверки модератором памятник будет добавлен на карту.');
+            form.reset();
+        });
+    }
 });
-
-let map;
 
 function initMap() {
     // Создаем карту с центром в Татарстане
-    map = new ymaps.Map('map', {
+    const map = new ymaps.Map('map', {
         center: [55.3, 51.5], // Центр Татарстана
-        zoom: 8
+        zoom: 8,
+        controls: ['zoomControl', 'typeSelector', 'fullscreenControl']
     });
 
-    // Добавляем элементы управления
-    map.controls.add('zoomControl');
-    map.controls.add('typeSelector');
-    map.controls.add('fullscreenControl');
+    // Стиль для меток
+    const monumentStyle = {
+        preset: 'islands#redIcon',
+        iconColor: '#e30613'
+    };
 
-    // Загружаем и добавляем памятники
-    addMonumentsToMap();
-}
-
-function addMonumentsToMap() {
-    // Данные памятников (вместо загрузки из файла)
+    // Добавляем памятники (можно заменить на загрузку из JSON)
     const monuments = [
         {
             name: "«Воинам, павшим в годы Великой Отечественной войны»",
@@ -295,40 +300,35 @@ function addMonumentsToMap() {
         }
     ];
 
-    // Создаем коллекцию для меток
+    // Создаем коллекцию меток
     const monumentCollection = new ymaps.GeoObjectCollection(null, {
         preset: 'islands#redIcon'
     });
 
-    // Добавляем каждый памятник на карту
+    // Добавляем метки на карту
     monuments.forEach(monument => {
         const placemark = new ymaps.Placemark(
-            [monument.latitude, monument.longitude],
+            monument.coords,
             {
                 balloonContentHeader: monument.name,
                 balloonContentBody: `
                     <div class="balloon">
                         <h3>${monument.name}</h3>
-                        ${monument.photo ? `<img src="${monument.photo}" alt="${monument.name}" style="max-width: 250px;">` : ''}
+                        ${monument.photo ? `<img src="${monument.photo}" alt="${monument.name}" style="max-width:250px;">` : ''}
                         <p><strong>Адрес:</strong> ${monument.address}</p>
                         <p>${monument.description}</p>
                     </div>
                 `,
                 hintContent: monument.name
             },
-            {
-                preset: monument.name.includes('ВОВ') || monument.name.includes('войны') ? 
-                    'islands#redMonumentIcon' : 'islands#blueMonumentIcon'
-            }
+            monumentStyle
         );
-        
         monumentCollection.add(placemark);
     });
 
-    // Добавляем коллекцию на карту
     map.geoObjects.add(monumentCollection);
 
-    // Устанавливаем границы отображения
+    // Устанавливаем границы для показа всех памятников
     if (monuments.length > 0) {
         map.setBounds(monumentCollection.getBounds(), {
             checkZoomRange: true,
